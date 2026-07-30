@@ -6,7 +6,7 @@
 ## Help:
 help: ## Show this help message
 	@printf "\n\033[1mrust-hello-world\033[0m\n"
-	@printf "A simple Rust hello-world application\n"
+	@printf "A Rust hello-world web server with Axum\n"
 	@printf "\n\033[1mUsage:\033[0m make \033[36m<target>\033[0m\n"
 	@awk 'BEGIN {FS = ":.*##"; section=""} \
 		/^## [A-Za-z]/ { section=substr($$0, 4); next } \
@@ -20,7 +20,7 @@ help: ## Show this help message
 build: ## Build all packages
 	cargo build
 
-run: ## Run the app
+run: ## Run the web server (listens on http://localhost:3000)
 	cargo run
 
 ## Quality:
