@@ -10,6 +10,15 @@ use std::sync::{
     Arc, Mutex,
     atomic::{AtomicU64, Ordering},
 };
+use utoipa::OpenApi;
+use utoipa_swagger_ui::SwaggerUi;
+
+#[derive(OpenApi)]
+#[openapi(
+    info(title = "Hello World API", description = "A Rust + Axum demo with Swagger"),
+    paths(home, counter, game)
+)]
+struct ApiDoc;
 
 #[derive(Clone)]
 struct AppState {
@@ -28,10 +37,12 @@ async fn main() {
         .route("/", get(home))
         .route("/counter", get(counter))
         .route("/game", get(game))
+        .merge(SwaggerUi::new("/docs").url("/api-docs/openapi.json", ApiDoc::openapi()))
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:4563").await.unwrap();
     println!("Serving at http://localhost:4563");
+    println!("Swagger UI at http://localhost:4563/docs");
     axum::serve(listener, app).await.unwrap();
 }
 
@@ -39,10 +50,18 @@ fn nav() -> &'static str {
     r#"<nav style="margin-bottom:1em;">
   <a href="/">Home</a> |
   <a href="/counter">Counter</a> |
-  <a href="/game">Number Guessing Game</a>
+  <a href="/game">Number Guessing Game</a> |
+  <a href="/docs">API Docs</a>
 </nav>"#
 }
 
+#[utoipa::path(
+    get,
+    path = "/",
+    responses(
+        (status = 200, description = "Home page", content_type = "text/html")
+    )
+)]
 async fn home() -> Html<String> {
     let nav_html = nav();
     Html(format!(
@@ -56,6 +75,13 @@ async fn home() -> Html<String> {
     ))
 }
 
+#[utoipa::path(
+    get,
+    path = "/counter",
+    responses(
+        (status = 200, description = "Visit counter page", content_type = "text/html")
+    )
+)]
 async fn counter(State(state): State<AppState>) -> Html<String> {
     let hits = state.counter.fetch_add(1, Ordering::SeqCst) + 1;
     let nav_html = nav();
@@ -71,6 +97,16 @@ async fn counter(State(state): State<AppState>) -> Html<String> {
     ))
 }
 
+#[utoipa::path(
+    get,
+    path = "/game",
+    params(
+        ("guess" = Option<u32>, Query, description = "Your guess between 1 and 20")
+    ),
+    responses(
+        (status = 200, description = "Number guessing game page", content_type = "text/html")
+    )
+)]
 async fn game(
     State(state): State<AppState>,
     Query(params): Query<HashMap<String, String>>,
@@ -81,7 +117,6 @@ async fn game(
 
     let message = match guess {
         None => {
-            // New visit: generate a fresh random target
             *target = rand::thread_rng().gen_range(1..=20);
             String::from("I'm thinking of a number between 1 and 20. Make a guess!")
         }
@@ -89,7 +124,6 @@ async fn game(
         Some(n) if n > *target => format!("{n} is too high. Try lower."),
         Some(_) => {
             let answer = *target;
-            // Generate a new target after a correct guess
             *target = rand::thread_rng().gen_range(1..=20);
             format!("{answer} is correct! Well done! I've picked a new number — guess again.")
         }
