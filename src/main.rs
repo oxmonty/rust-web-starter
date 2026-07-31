@@ -30,8 +30,8 @@ async fn main() {
         .route("/game", get(game))
         .with_state(state);
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
-    println!("Serving at http://localhost:3000");
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:4563").await.unwrap();
+    println!("Serving at http://localhost:4563");
     axum::serve(listener, app).await.unwrap();
 }
 

@@ -8,7 +8,7 @@ A hello-world web server built with Rust and Axum.
 make run
 ```
 
-Open http://localhost:3000
+Open http://localhost:4563
 
 ## Targets
 

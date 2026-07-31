@@ -20,7 +20,7 @@ help: ## Show this help message
 build: ## Build all packages
 	cargo build
 
-run: ## Run the web server (listens on http://localhost:3000)
+run: ## Run the web server (listens on http://localhost:4563)
 	cargo run
 
 ## Quality:
