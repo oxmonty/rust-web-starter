@@ -4,21 +4,24 @@ use axum::{
     routing::get,
     Router,
 };
+use rand::Rng;
 use std::collections::HashMap;
 use std::sync::{
-    Arc,
+    Arc, Mutex,
     atomic::{AtomicU64, Ordering},
 };
 
 #[derive(Clone)]
 struct AppState {
     counter: Arc<AtomicU64>,
+    target: Arc<Mutex<u32>>,
 }
 
 #[tokio::main]
 async fn main() {
     let state = AppState {
         counter: Arc::new(AtomicU64::new(0)),
+        target: Arc::new(Mutex::new(rand::thread_rng().gen_range(1..=20))),
     };
 
     let app = Router::new()
@@ -68,17 +71,28 @@ async fn counter(State(state): State<AppState>) -> Html<String> {
     ))
 }
 
-async fn game(Query(params): Query<HashMap<String, String>>) -> impl IntoResponse {
+async fn game(
+    State(state): State<AppState>,
+    Query(params): Query<HashMap<String, String>>,
+) -> impl IntoResponse {
     let guess = params.get("guess").and_then(|g| g.parse::<u32>().ok());
 
-    // Always 42 -- the classic. Keeps it zero-dep fun.
-    let target: u32 = 42;
+    let mut target = state.target.lock().unwrap();
 
     let message = match guess {
-        None => String::from("I'm thinking of a number between 1 and 100. Make a guess!"),
-        Some(n) if n < target => format!("{n} is too low. Try higher."),
-        Some(n) if n > target => format!("{n} is too high. Try lower."),
-        Some(n) => format!("{n} is correct! Well done!"),
+        None => {
+            // New visit: generate a fresh random target
+            *target = rand::thread_rng().gen_range(1..=20);
+            String::from("I'm thinking of a number between 1 and 20. Make a guess!")
+        }
+        Some(n) if n < *target => format!("{n} is too low. Try higher."),
+        Some(n) if n > *target => format!("{n} is too high. Try lower."),
+        Some(_) => {
+            let answer = *target;
+            // Generate a new target after a correct guess
+            *target = rand::thread_rng().gen_range(1..=20);
+            format!("{answer} is correct! Well done! I've picked a new number — guess again.")
+        }
     };
 
     let nav_html = nav();
@@ -90,7 +104,7 @@ async fn game(Query(params): Query<HashMap<String, String>>) -> impl IntoRespons
 <h1>Number Guessing Game</h1>
 <p>{message}</p>
 <form action="/game" method="get">
-  <input type="number" name="guess" min="1" max="100" placeholder="1-100" autofocus />
+  <input type="number" name="guess" min="1" max="20" placeholder="1-20" autofocus />
   <button type="submit">Guess</button>
 </form>
 </body></html>"#
