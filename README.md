@@ -5,7 +5,17 @@
 
 A minimal Rust web service starter.
 
-**Stack:** Axum, Diesel + diesel-async (SQLite or Postgres), utoipa (OpenAPI + Swagger), tower-http (tracing + CORS).
+## Features
+
+- **Axum handlers** Typed extractors reject malformed input with a 422 before your code runs.
+- **SQLite or Postgres** Chosen at compile time through diesel-async. SQLite is bundled, so nothing needs installing to get started.
+- **Swagger docs** utoipa generates the OpenAPI spec from the handler signatures, so the docs at `/docs` cannot drift from the code.
+- **Request logging** One line per request with method, path, status, latency and a request id a client can quote back to you. `LOG_FORMAT=json` for aggregators.
+- **Liveness and readiness probes** `/healthz` never touches the database, so a database blip cannot get the process killed. `/readyz` does.
+- **CORS closed by default** No cross-origin request is allowed until you name an origin, so a permissive config cannot reach production by accident.
+- **Panic recovery** A panicking handler becomes a normal 500 response instead of a dropped connection.
+- **Migrations at boot** Both backends apply their migrations on startup, so a fresh checkout and a fresh container are both ready to serve.
+- **Makefile and Docker** `make check` runs fmt, lint and tests against both backends; `make up` brings up Postgres and the app in containers.
 
 ## Quick start
 
