@@ -28,6 +28,22 @@ Copy `.env.example` to `.env`. It documents all five variables: `DATABASE_URL`, 
 
 `ALLOWED_ORIGINS` is empty by default, so no cross-origin requests are permitted. Set it explicitly in production. CORS is never permissive.
 
+## Logging
+
+Every request logs one line at `info`, carrying method, path, status, latency and a request id:
+
+```
+INFO request{method=GET path=/todos request_id="0e40..."}: finished processing request latency=1 ms status=200
+```
+
+The id comes from the caller's `x-request-id` header when it sends one, otherwise the service generates a UUID. Either way it goes back on the response, so a client can quote an id and you can grep for it.
+
+Set `LOG_FORMAT=json` in production for one JSON object per line, with the span fields nested under `spans` for your aggregator. `RUST_LOG` takes full [env filter](https://docs.rs/tracing-subscriber/latest/tracing_subscriber/filter/struct.EnvFilter.html) syntax, so `RUST_LOG=info,tower_http=debug` adds a "started processing request" line per request, useful when you need to see requests that never finish.
+
+A panicking handler is caught, logged at `error` and returned as a normal 500 error body, rather than dropping the connection and printing to stderr where nothing collects it.
+
+Handlers log only what the access line cannot show, which is why `create_todo` logs the new id and the other routes log nothing. Internal failures and panics are `error`, a failing `/readyz` or a conflict is `warn`, and rejected input is `debug`: the client already gets the reason in the response body, so logging it by default would let any caller flood the log.
+
 ## Optional tools
 
 ```sh
