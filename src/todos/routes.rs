@@ -27,6 +27,7 @@ where
 }
 
 #[utoipa::path(
+    tag = "todos",
     get,
     path = "/todos",
     params(Pagination),
@@ -44,6 +45,7 @@ async fn list_todos(
 }
 
 #[utoipa::path(
+    tag = "todos",
     post,
     path = "/todos",
     request_body = NewTodo,
@@ -61,6 +63,7 @@ async fn create_todo(
 }
 
 #[utoipa::path(
+    tag = "todos",
     get,
     path = "/todos/{id}",
     params(("id" = i32, Path, description = "Todo id")),
@@ -78,6 +81,7 @@ async fn get_todo(
 }
 
 #[utoipa::path(
+    tag = "todos",
     put,
     path = "/todos/{id}",
     params(("id" = i32, Path, description = "Todo id")),
@@ -98,6 +102,7 @@ async fn update_todo(
 }
 
 #[utoipa::path(
+    tag = "todos",
     delete,
     path = "/todos/{id}",
     params(("id" = i32, Path, description = "Todo id")),

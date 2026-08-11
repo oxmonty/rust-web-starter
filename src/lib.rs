@@ -22,10 +22,16 @@ pub struct AppState {
 }
 
 #[derive(OpenApi)]
-#[openapi(info(
-    title = "rust-web-starter",
-    description = "A Rust + Axum + Diesel starter template"
-))]
+#[openapi(
+    info(
+        title = "rust-web-starter",
+        description = "A Rust + Axum + Diesel starter template"
+    ),
+    tags(
+        (name = "todos", description = "Todo CRUD"),
+        (name = "health", description = "Liveness and readiness probes")
+    )
+)]
 struct ApiDoc;
 
 pub fn app(state: AppState) -> Router {

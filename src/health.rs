@@ -15,6 +15,7 @@ pub struct HealthBody {
 }
 
 #[utoipa::path(
+    tag = "health",
     get,
     path = "/healthz",
     responses((status = 200, description = "Service is up", body = HealthBody)),
@@ -25,6 +26,7 @@ async fn healthz() -> Json<HealthBody> {
 }
 
 #[utoipa::path(
+    tag = "health",
     get,
     path = "/readyz",
     responses(
