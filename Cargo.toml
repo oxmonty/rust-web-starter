@@ -19,7 +19,13 @@ postgres = ["diesel/postgres", "diesel-async/postgres", "dep:pq-sys"]
 [dependencies]
 axum = "0.8.9"
 tokio = { version = "1.53", features = ["macros", "rt-multi-thread", "signal", "net"] }
-tower-http = { version = "0.7", features = ["trace", "cors", "request-id", "util"] }
+tower-http = { version = "0.7", features = [
+    "trace",
+    "cors",
+    "request-id",
+    "catch-panic",
+    "util",
+] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 

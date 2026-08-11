@@ -39,7 +39,9 @@ async fn readyz(State(state): State<AppState>) -> (StatusCode, Json<HealthBody>)
     match db::ping(&state.pool).await {
         Ok(()) => (StatusCode::OK, Json(HealthBody { status: "ready" })),
         Err(err) => {
-            tracing::debug!(error = %err, "readyz check failed");
+            // warn, not debug: this is the service telling the load balancer to stop sending
+            // it traffic, and at debug the reason is invisible at the default log level
+            tracing::warn!(error = %err, "readyz check failed");
             (
                 StatusCode::SERVICE_UNAVAILABLE,
                 Json(HealthBody { status: "degraded" }),

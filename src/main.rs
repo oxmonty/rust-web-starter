@@ -44,12 +44,24 @@ async fn main() {
         }
     };
 
-    tracing::info!(bind_addr, "listening");
+    // bind_addr is usually 0.0.0.0, which isn't a URL you can open; report loopback instead
+    let url = match listener.local_addr() {
+        Ok(addr) if addr.ip().is_unspecified() => format!("http://localhost:{}", addr.port()),
+        Ok(addr) => format!("http://{addr}"),
+        Err(_) => format!("http://{bind_addr}"),
+    };
 
-    axum::serve(listener, app(state))
+    tracing::info!(bind_addr, "listening on {url} (docs at {url}/docs)");
+
+    // every other startup failure logs and exits; panicking here instead would report through
+    // the default panic hook, which writes to stderr and bypasses the log format entirely
+    if let Err(err) = axum::serve(listener, app(state))
         .with_graceful_shutdown(shutdown_signal())
         .await
-        .expect("server error");
+    {
+        tracing::error!(error = %err, "server error");
+        std::process::exit(1);
+    }
 }
 
 async fn shutdown_signal() {

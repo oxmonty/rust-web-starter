@@ -8,6 +8,7 @@ pub mod todos;
 use std::sync::Arc;
 
 use axum::Router;
+use tower_http::request_id::{MakeRequestUuid, PropagateRequestIdLayer, SetRequestIdLayer};
 use utoipa::OpenApi;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_swagger_ui::SwaggerUi;
@@ -43,8 +44,14 @@ pub fn app(state: AppState) -> Router {
         .with_state(state)
         .split_for_parts();
 
+    // listed innermost first: each .layer() wraps what came before it, so on the way in a
+    // request meets SetRequestId, then the trace layer (whose span reads the id it just set),
+    // then CORS, then the panic guard. A panic therefore becomes a 500 the trace layer sees.
     router
         .merge(SwaggerUi::new("/docs").url("/api-docs/openapi.json", openapi))
-        .layer(telemetry::trace_layer())
+        .layer(telemetry::catch_panic_layer())
+        .layer(PropagateRequestIdLayer::x_request_id())
         .layer(telemetry::cors_layer(&allowed_origins))
+        .layer(telemetry::trace_layer())
+        .layer(SetRequestIdLayer::x_request_id(MakeRequestUuid))
 }

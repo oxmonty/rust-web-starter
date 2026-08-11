@@ -34,12 +34,25 @@ impl IntoResponse for AppError {
                 "not_found",
                 "The requested resource was not found.".to_string(),
             ),
-            AppError::Validation(message) => (
-                StatusCode::UNPROCESSABLE_ENTITY,
-                "validation_error",
-                message,
-            ),
-            AppError::Conflict(message) => (StatusCode::CONFLICT, "conflict", message),
+            // info, not warn: a rejected request is not an operational problem, but the access
+            // log records only "status=422", and the span deliberately carries no query string
+            // (it is client-controlled and can hold secrets), so without this line a 422 cannot
+            // be explained after the fact. Volume is bounded: every request already logs once.
+            // the field is `reason`, never `message`: tracing reserves `message` for the event
+            // body, so a field of that name emits JSON with two "message" keys and the parser
+            // keeps whichever comes last, silently dropping the event's own text
+            AppError::Validation(message) => {
+                tracing::info!(reason = %message, "validation error");
+                (
+                    StatusCode::UNPROCESSABLE_ENTITY,
+                    "validation_error",
+                    message,
+                )
+            }
+            AppError::Conflict(message) => {
+                tracing::warn!(reason = %message, "conflict");
+                (StatusCode::CONFLICT, "conflict", message)
+            }
             // never leak diesel::result::Error's Display to the client, it exposes schema details
             AppError::Database(err) => {
                 tracing::error!(error = %err, "database error");
