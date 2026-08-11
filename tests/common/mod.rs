@@ -1,3 +1,7 @@
+// every integration test binary compiles this module separately, so whatever a given binary
+// does not happen to use reads as dead code
+#![allow(dead_code)]
+
 use std::sync::Arc;
 
 use diesel_async::RunQueryDsl;
