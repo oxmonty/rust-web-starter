@@ -45,7 +45,7 @@ libsqlite3-sys = { version = "0.38", features = ["bundled"], optional = true }
 pq-sys = { version = "0.7", features = ["bundled"], optional = true }
 
 [dev-dependencies]
-reqwest = { version = "0.12", default-features = false, features = ["json"] }
+reqwest = { version = "0.13", default-features = false, features = ["json"] }
 tempfile = "3"
 
 [profile.release]
