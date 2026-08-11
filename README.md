@@ -15,6 +15,8 @@ Defaults to SQLite, which is bundled and compiled from source. No database to in
 - API: http://localhost:4563
 - Swagger UI: http://localhost:4563/docs
 
+![Swagger UI showing the todos and health endpoint groups](docs/swagger.png)
+
 Copy `.env.example` to `.env` to change any setting.
 
 ## Postgres
