@@ -62,7 +62,7 @@ async fn create_todo(
     // the access log already records method, path, status and latency for every request, so a
     // handler only logs what that line cannot show. Here that is the server-assigned id: every
     // other route carries its id in the path.
-    tracing::info!(id = todo.id, "todo created");
+    tracing::info!(todo_id = todo.id, "todo created");
     Ok((StatusCode::CREATED, Json(todo)))
 }
 

@@ -42,7 +42,11 @@ Set `LOG_FORMAT=json` in production for one JSON object per line, with the span 
 
 A panicking handler is caught, logged at `error` and returned as a normal 500 error body, rather than dropping the connection and printing to stderr where nothing collects it.
 
-Handlers log only what the access line cannot show, which is why `create_todo` logs the new id and the other routes log nothing. Internal failures and panics are `error`, a failing `/readyz` or a conflict is `warn`, and rejected input is `debug`: the client already gets the reason in the response body, so logging it by default would let any caller flood the log.
+Handlers log only what the access line cannot show, which is why `create_todo` logs the new id and the other routes log nothing. Internal failures and panics are `error`, a failing `/readyz` or a conflict is `warn`, and a rejected request logs its reason at `info`, since the access line records only `status=422`.
+
+Each event logs once. Routes report failure by returning `AppError`, which logs the cause, so tower-http's own failure callback is switched off rather than adding a second line that repeats the status and re-labels a 503 readiness probe as an error.
+
+When adding your own logs, do not name a field `message`. `tracing` reserves it for the event text, and a field of that name produces JSON with two `message` keys, of which a parser keeps only one. Use `reason`, `error` or something specific.
 
 ## Optional tools
 

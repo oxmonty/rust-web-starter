@@ -4,7 +4,9 @@ use axum::response::{IntoResponse, Response};
 use tower_http::catch_panic::CatchPanicLayer;
 use tower_http::classify::{ServerErrorsAsFailures, SharedClassifier};
 use tower_http::cors::{AllowOrigin, Any, CorsLayer};
-use tower_http::trace::{DefaultOnResponse, MakeSpan, TraceLayer};
+use tower_http::trace::{
+    DefaultOnBodyChunk, DefaultOnEos, DefaultOnRequest, DefaultOnResponse, MakeSpan, TraceLayer,
+};
 use tracing::{Level, Span};
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::layer::SubscriberExt;
@@ -51,10 +53,24 @@ impl<B> MakeSpan<B> for RequestSpan {
 // tower-http defaults every trace level to DEBUG, so a service running at the default
 // RUST_LOG=info logs no requests at all. Raise the response event, which carries status and
 // latency, and leave on_request at DEBUG: one access log line per request, not two.
-pub fn trace_layer() -> TraceLayer<SharedClassifier<ServerErrorsAsFailures>, RequestSpan> {
+// on_failure is disabled rather than left at its default: it would log a second ERROR per
+// failed request saying only "response failed, status 500", which AppError has already logged
+// with the actual cause. It also classifies every 5xx as an error, so a database restart would
+// report ERROR on each /readyz probe when the service is deliberately answering "not ready".
+// The rule this relies on: routes report failure by returning AppError, which does the logging.
+pub fn trace_layer() -> TraceLayer<
+    SharedClassifier<ServerErrorsAsFailures>,
+    RequestSpan,
+    DefaultOnRequest,
+    DefaultOnResponse,
+    DefaultOnBodyChunk,
+    DefaultOnEos,
+    (),
+> {
     TraceLayer::new_for_http()
         .make_span_with(RequestSpan)
         .on_response(DefaultOnResponse::new().level(Level::INFO))
+        .on_failure(())
 }
 
 // a panicking handler otherwise kills the connection and reports through the default panic
