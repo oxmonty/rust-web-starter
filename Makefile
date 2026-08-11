@@ -1,4 +1,4 @@
-.PHONY: help dev run build test test-pg migrate migrate-pg schema lint lint-pg fmt check docker-up docker-down gacp
+.PHONY: help dev run build test test-pg migrate migrate-pg schema lint lint-pg fmt check up down gacp
 
 # Default target - show help
 .DEFAULT_GOAL := help
@@ -75,10 +75,10 @@ check: ## Format check + lint + test (both backends)
 	$(MAKE) test-pg
 
 ## Docker:
-docker-up: ## Start services via docker-compose
+up: ## Start Postgres and the app via docker compose
 	docker compose up --build
 
-docker-down: ## Stop and remove services
+down: ## Stop and remove services
 	docker compose down -v
 
 ## Git:
