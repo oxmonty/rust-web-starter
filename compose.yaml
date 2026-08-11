@@ -1,0 +1,40 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: rust_web_starter
+      POSTGRES_PASSWORD: rust_web_starter
+      POSTGRES_DB: rust_web_starter
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rust_web_starter -d rust_web_starter"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://rust_web_starter:rust_web_starter@db:5432/rust_web_starter
+      BIND_ADDR: 0.0.0.0:4563
+      ALLOWED_ORIGINS: ""
+      RUST_LOG: info
+      LOG_FORMAT: json
+    ports:
+      - "4563:4563"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4563/readyz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+volumes:
+  db_data:
