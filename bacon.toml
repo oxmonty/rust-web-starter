@@ -1,0 +1,23 @@
+# bacon.toml - command runner config for Rust development
+# Reference: https://dystroy.org/bacon/config/
+
+default_job = "check"
+
+[jobs.check]
+command = ["cargo", "check", "--all-targets"]
+need_stdout = false
+
+[jobs.clippy]
+command = ["cargo", "clippy", "--all-targets", "--", "-D", "warnings"]
+need_stdout = false
+
+[jobs.test]
+command = ["cargo", "test"]
+need_stdout = false
+
+[jobs.run]
+command = ["cargo", "run"]
+need_stdout = true
+background = true
+on_change_strategy = "kill_then_restart"
+allow_warnings = true

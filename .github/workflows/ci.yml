@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --all --check
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - backend: sqlite
+            flags: ""
+            database_url: ""
+          - backend: postgres
+            flags: "--no-default-features --features postgres"
+            database_url: "postgres://postgres@localhost/postgres"
+
+    # Started for both legs: `services` accepts no `if:` key. The sqlite leg
+    # simply ignores it.
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    env:
+      DATABASE_URL: ${{ matrix.database_url }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.backend }}
+
+      - name: Clippy (${{ matrix.backend }})
+        run: cargo clippy --all-targets ${{ matrix.flags }} -- -D warnings
+
+      - name: Test (${{ matrix.backend }})
+        run: cargo test ${{ matrix.flags }}
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

@@ -1,11 +1,54 @@
 [package]
-name = "rust-hello-world"
+name = "rust-web-starter"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+default = ["sqlite"]
+# Mutually exclusive. Cargo features are additive, so db::mod enforces this with compile_error!.
+sqlite = [
+    "diesel/sqlite",
+    "diesel/returning_clauses_for_sqlite_3_35",
+    "diesel-async/sqlite",
+    "dep:libsqlite3-sys",
+]
+postgres = ["diesel/postgres", "diesel-async/postgres", "dep:pq-sys"]
+
 [dependencies]
-axum = "0.8"
-rand = "0.8"
-tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
-utoipa = { version = "5", features = ["axum_extras"] }
+axum = "0.8.9"
+tokio = { version = "1.53", features = ["macros", "rt-multi-thread", "signal", "net"] }
+tower-http = { version = "0.7", features = ["trace", "cors", "request-id", "util"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+diesel = { version = "2.3.12", features = ["chrono"] }
+diesel-async = { version = "0.9.2", features = ["deadpool", "async-connection-wrapper"] }
+diesel_migrations = "2.3"
+
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+chrono = { version = "0.4", features = ["serde"] }
+
+utoipa = { version = "5.5", features = ["axum_extras", "chrono"] }
+utoipa-axum = "0.2"
 utoipa-swagger-ui = { version = "9", features = ["axum"] }
+
+thiserror = "2"
+anyhow = "1"
+dotenvy = "0.15"
+uuid = { version = "1", features = ["v4"] }
+
+# Compiled from source so neither backend needs a system library installed.
+# Versions must stay inside diesel's own ranges or cargo links two copies and
+# `bundled` silently stops applying: libsqlite3-sys >=0.17.2,<0.39.0 / pq-sys >=0.4.0,<0.8.0.
+libsqlite3-sys = { version = "0.38", features = ["bundled"], optional = true }
+pq-sys = { version = "0.7", features = ["bundled"], optional = true }
+
+[dev-dependencies]
+reqwest = { version = "0.12", default-features = false, features = ["json"] }
+tempfile = "3"
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true

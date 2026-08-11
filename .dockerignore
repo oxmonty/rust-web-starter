@@ -1,0 +1,9 @@
+target/
+.git/
+.github/
+data/
+docs/
+*.md
+.env
+*.db
+.DS_Store
