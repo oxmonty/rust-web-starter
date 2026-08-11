@@ -34,12 +34,21 @@ impl IntoResponse for AppError {
                 "not_found",
                 "The requested resource was not found.".to_string(),
             ),
-            AppError::Validation(message) => (
-                StatusCode::UNPROCESSABLE_ENTITY,
-                "validation_error",
-                message,
-            ),
-            AppError::Conflict(message) => (StatusCode::CONFLICT, "conflict", message),
+            // debug, not warn: the caller already gets the reason in the response body, and any
+            // client can trigger this at will, so logging it by default hands out a log-flooding
+            // lever. RUST_LOG=debug when an integration needs explaining.
+            AppError::Validation(message) => {
+                tracing::debug!(%message, "validation error");
+                (
+                    StatusCode::UNPROCESSABLE_ENTITY,
+                    "validation_error",
+                    message,
+                )
+            }
+            AppError::Conflict(message) => {
+                tracing::warn!(%message, "conflict");
+                (StatusCode::CONFLICT, "conflict", message)
+            }
             // never leak diesel::result::Error's Display to the client, it exposes schema details
             AppError::Database(err) => {
                 tracing::error!(error = %err, "database error");
