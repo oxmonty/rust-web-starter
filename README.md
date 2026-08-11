@@ -1,4 +1,7 @@
-# rust-web-starter
+<h1>
+  <img alt="rust logo" src="./assets/rust.svg" width="70" valign="middle">
+  &nbsp;rust-web-starter
+</h1>
 
 A minimal Rust web service starter.
 

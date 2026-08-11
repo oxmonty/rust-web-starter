@@ -1,6 +1,7 @@
 target/
 .git/
 .github/
+assets/
 data/
 docs/
 *.md
