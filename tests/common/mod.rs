@@ -34,12 +34,18 @@ impl TestApp {
     }
 }
 
-// DATABASE_URL set -> postgres leg, use it as-is. Unset -> fresh temp-file sqlite db.
+// DATABASE_URL set -> use it as-is. Unset or empty -> fresh temp-file sqlite db.
+// An empty value has to count as unset: env::var returns Ok("") for a variable set to the
+// empty string, and a CI matrix that defines DATABASE_URL for only one leg supplies exactly that.
 // Never `:memory:`: each pooled connection gets its own separate empty database.
 pub async fn spawn_app() -> TestApp {
-    let (database_url, temp_dir) = match std::env::var("DATABASE_URL") {
-        Ok(url) => (url, None),
-        Err(_) => {
+    let configured_url = std::env::var("DATABASE_URL")
+        .ok()
+        .filter(|url| !url.trim().is_empty());
+
+    let (database_url, temp_dir) = match configured_url {
+        Some(url) => (url, None),
+        None => {
             let temp_dir = tempfile::tempdir().expect("create temp dir");
             let db_path = temp_dir.path().join("test.db");
             (format!("sqlite://{}", db_path.display()), Some(temp_dir))
@@ -48,7 +54,9 @@ pub async fn spawn_app() -> TestApp {
 
     let pool = db::build_pool(&database_url).await.expect("build pool");
 
-    if temp_dir.is_some() {
+    // keyed on the URL scheme, not on whether a temp dir was made: the advisory lock only
+    // exists on postgres, so conflating the two turns a config slip into a confusing failure
+    if !database_url.starts_with("postgres") {
         db::run_migrations(&database_url)
             .await
             .expect("run migrations");
