@@ -7,10 +7,13 @@ pub mod todos;
 
 use std::sync::Arc;
 
+use axum::Json;
 use axum::Router;
+use serde::Serialize;
 use tower_http::request_id::{MakeRequestUuid, PropagateRequestIdLayer, SetRequestIdLayer};
-use utoipa::OpenApi;
+use utoipa::{OpenApi, ToSchema};
 use utoipa_axum::router::OpenApiRouter;
+use utoipa_axum::routes;
 use utoipa_swagger_ui::SwaggerUi;
 
 use crate::config::Config;
@@ -29,16 +32,39 @@ pub struct AppState {
         description = "A Rust + Axum + Diesel starter template"
     ),
     tags(
+        (name = "meta", description = "Service metadata"),
         (name = "todos", description = "Todo CRUD"),
         (name = "health", description = "Liveness and readiness probes")
     )
 )]
 struct ApiDoc;
 
+#[derive(Debug, Serialize, ToSchema)]
+pub struct IndexBody {
+    message: &'static str,
+    version: &'static str,
+    docs: &'static str,
+}
+
+#[utoipa::path(
+    tag = "meta",
+    get,
+    path = "/",
+    responses((status = 200, description = "Service metadata", body = IndexBody)),
+)]
+async fn index() -> Json<IndexBody> {
+    Json(IndexBody {
+        message: "hello world",
+        version: env!("CARGO_PKG_VERSION"),
+        docs: "/docs",
+    })
+}
+
 pub fn app(state: AppState) -> Router {
     let allowed_origins = state.config.allowed_origins.clone();
 
     let (router, openapi) = OpenApiRouter::with_openapi(ApiDoc::openapi())
+        .routes(routes!(index))
         .merge(health::router())
         .merge(todos::router())
         .with_state(state)
